@@ -1,15 +1,16 @@
 package slacker
 
 import (
-	"net/http"
 	"bytes"
-	"errors"
 	"encoding/json"
+	"errors"
+	"net/http"
 )
 
 type SlackBody struct {
 	Text string `json:"text"`
 }
+
 // make json-formatted body for slack webhook post request
 func MakeReqBody(message string) (*bytes.Buffer, error) {
 	bodyStruct := SlackBody{
@@ -22,10 +23,9 @@ func MakeReqBody(message string) (*bytes.Buffer, error) {
 	return bytes.NewBuffer(bodyJson), nil
 }
 
-
 func PostSlackMessage(message string, slackTarget string) error {
 	// @TODO - how to add slackTarget to some config so that
-		// calling library doesn't have to include it every time?
+	// calling library doesn't have to include it every time?
 
 	reqBody, err := MakeReqBody(message)
 	if err != nil {
