@@ -1,95 +1,45 @@
-// package main // slacker
-
 package slacker
 
 import (
-	"log";
-	"os";
-	"net/http";
-	"net/url";
-	"io/ioutil";
-	"bytes";
-	"fmt"
+	"net/http"
+	"bytes"
+	"errors"
+	"encoding/json"
 )
 
-// func main() {
+type SlackBody struct {
+	Text string `json:"text"`
+}
+// make json-formatted body for slack webhook post request
+func MakeReqBody(message string) (*bytes.Buffer, error) {
+	bodyStruct := SlackBody{
+		Text: message,
+	}
+	bodyJson, err := json.Marshal(bodyStruct)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewBuffer(bodyJson), nil
+}
 
-// 	// localCRUDBooks := "http://localhost:3000/books"
-// 	// GetBooks(localCRUDBooks)
-// 	// PostBook(localCRUDBooks)
-// 	PostSlackMessage("test")
 
-// }
+func PostSlackMessage(message string, slackTarget string) error {
+	// @TODO - how to add slackTarget to some config so that
+		// calling library doesn't have to include it every time?
 
-func PostSlackMessage(message string){
-	log.Println(message)
-
-	slackTarget := os.Getenv("HOWLER_SLACK_WEBHOOK_URL")
-
-	// create a jsonesque body for the post request
-	reqStr := fmt.Sprintf("{\"text\":\"%s\"}", message)
-	reqBody := bytes.NewBufferString(reqStr)
+	reqBody, err := MakeReqBody(message)
+	if err != nil {
+		return err
+	}
 	response, err := http.Post(slackTarget, "application/json", reqBody)
 	if err != nil {
-		log.Fatal("post error", err)
-	} 
-
-	defer response.Body.Close()
-	
-	log.Println(response.Status)
-	// if response.StatusCode == 200 {
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			log.Fatal("body read error", err)
-		}
-		// body is a byte slice
-		log.Println("body", string(body[:]))
-	// }
-
-
-}
-
-func GetBooks(targetUrl string) {
-
-	response, err := http.Get(targetUrl)
-	if err != nil {
-		log.Fatal("get error", err)
-	} 
-
-	defer response.Body.Close()
-	
-	log.Println(response.Status)
-	if response.StatusCode == 200 {
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			log.Fatal("body read error", err)
-		}
-		// body is a byte slice
-		log.Println("body", string(body[:]))
+		return err
 	}
-}
-
-func PostBook(targetUrl string) {
-	v := url.Values{}
-	v.Set("title", "One Fish, Two Fish, Red Fish, Blue Fish")
-	v.Set("author", "Dr. Seuss")  // image (url), releaseDate
-	v.Set("image", "http://3.bp.blogspot.com/_KjHHNyQNQ-w/S8pY--rDoII/AAAAAAAAAEw/_Dez_1Kc5a8/s1600/one-fish-two-fish.jpg")
-	log.Println(v)
-	response, err := http.PostForm(targetUrl, v)
-	if err != nil {
-		log.Fatal("post error", err)
-	} 
 
 	defer response.Body.Close()
-	
-	log.Println(response.Status)
-	// if response.StatusCode == 200 {
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			log.Fatal("body read error", err)
-		}
-		// body is a byte slice
-		log.Println("body", string(body[:]))
-	// }
 
+	if response.StatusCode >= 400 {
+		return errors.New(response.Status)
+	}
+	return nil
 }
